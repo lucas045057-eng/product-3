@@ -24,8 +24,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0 # 质量守卫要跟基线提交比对差异，需要完整历史
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
+      # 质量基线守卫：改了验证命令 / make check 目标 / 工作流 / AGENTS.md 就判失败，
+      # 除非 PR 带 baseline-approved（丞相已批准）。
+      - name: 质量基线守卫（受保护文件）
+        run: node scripts/guard.mjs
       - name: make check（lint + test + build + e2e + 复核 passing 功能项）
         run: make check
