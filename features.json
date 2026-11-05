@@ -18,8 +18,12 @@
       "id": "F2",
       "behavior": "新增（空内容不可加）、勾选/取消、删除",
       "verification": "node --test",
-      "state": "not_started",
-      "issue": 3
+      "state": "passing",
+      "issue": 3,
+      "verified": {
+        "at": "2026-11-05T04:19:02.950Z",
+        "digest": "b110ddfb543b94e2e4848722f9e8e1724ee5fac5d98a8b1d545af36a7b578ff7"
+      }
     },
     {
       "id": "F3",
