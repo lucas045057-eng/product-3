@@ -1,26 +1,42 @@
 {
+  "repo": "lucas045057-eng/product-3",
+  "issue": 3,
+  "source_event": "lucas045057-eng/secretary-playground#3",
   "features": [
     {
       "id": "F1",
-      "behavior": "打开站点首页能看到 Hello 页面，页面上显示当前部署对应的 commit 短 SHA，并链接到该提交",
-      "verification": "node scripts/build.mjs && node scripts/e2e.mjs index",
-      "state": "passing",
-      "issue": null,
-      "verified": {
-        "at": "2026-11-04T13:35:22.271Z",
-        "digest": "ffe46a8b5bfd0f71896ea5b8c9a6b6034c9449fca74c062e57764aa5113321dc"
-      }
+      "behavior": "todo 目录下可直接打开的单页，手机窄屏不溢出",
+      "verification": "node --test",
+      "state": "not_started",
+      "issue": 3
     },
     {
       "id": "F2",
-      "behavior": "站点根目录的 /version.json 返回合法 JSON，commit 字段是完整的 40 位 SHA 且等于本次构建的提交",
-      "verification": "node scripts/build.mjs && node scripts/e2e.mjs version",
-      "state": "passing",
-      "issue": null,
-      "verified": {
-        "at": "2026-11-04T13:35:22.404Z",
-        "digest": "fddf445c94da5b95503494be0dd2c3ed56d69aec089a608a9cd72a5581081419"
-      }
+      "behavior": "新增（空内容不可加）、勾选/取消、删除",
+      "verification": "node --test",
+      "state": "not_started",
+      "issue": 3
+    },
+    {
+      "id": "F3",
+      "behavior": "本地存储，刷新后保留",
+      "verification": "node --test",
+      "state": "not_started",
+      "issue": 3
+    },
+    {
+      "id": "F4",
+      "behavior": "顶部显示今天完成几条/共几条并实时一致",
+      "verification": "node --test",
+      "state": "not_started",
+      "issue": 3
+    },
+    {
+      "id": "F5",
+      "behavior": "按本地自然日划分，过零点已完成的不再出现、未完成的顺延到今天。待确认 5 条",
+      "verification": "node --test",
+      "state": "not_started",
+      "issue": 3
     }
   ]
 }
