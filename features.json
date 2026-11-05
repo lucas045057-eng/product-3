@@ -29,8 +29,12 @@
       "id": "F3",
       "behavior": "本地存储，刷新后保留",
       "verification": "node --test",
-      "state": "not_started",
-      "issue": 3
+      "state": "passing",
+      "issue": 3,
+      "verified": {
+        "at": "2026-11-05T05:16:16.789Z",
+        "digest": "64deb48cb26651591a0389c2aa080d5bd0525ddd4b76831de1e6978b1a0e8085"
+      }
     },
     {
       "id": "F4",

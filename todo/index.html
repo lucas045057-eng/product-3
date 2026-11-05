@@ -45,27 +45,69 @@
       return now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
     }
 
+    var STORAGE_KEY = "daily-todo.v1";
     var todos = [];
     var nextId = 1;
     var list = document.getElementById("list");
     var empty = document.getElementById("empty");
     var input = document.getElementById("new-text");
 
+    function getStorage() {
+      try {
+        return typeof localStorage === "undefined" ? null : localStorage;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function load() {
+      var storage = getStorage();
+      if (!storage) return;
+      var saved;
+      try {
+        saved = JSON.parse(storage.getItem(STORAGE_KEY));
+      } catch (error) {
+        return;
+      }
+      if (!saved || !Array.isArray(saved.todos)) return;
+      saved.todos.forEach(function (todo) {
+        if (!todo || typeof todo.text !== "string" || !todo.text.trim()) return;
+        var id = Number.isInteger(todo.id) && todo.id > 0 ? todo.id : 0;
+        if (!id || todos.some(function (t) { return t.id === id; })) id = 0;
+        todos.push({ id: id, text: todo.text.trim(), done: todo.done === true });
+      });
+      todos.forEach(function (todo) { if (todo.id >= nextId) nextId = todo.id + 1; });
+      todos.forEach(function (todo) { if (!todo.id) todo.id = nextId++; });
+    }
+
+    function save() {
+      var storage = getStorage();
+      if (!storage) return;
+      try {
+        storage.setItem(STORAGE_KEY, JSON.stringify({ todos: todos }));
+      } catch (error) {
+        return;
+      }
+    }
+
     function addTodo(text) {
       var trimmed = String(text == null ? "" : text).trim();
       if (!trimmed) return false;
       todos.push({ id: nextId++, text: trimmed, done: false });
+      save();
       render();
       return true;
     }
 
     function toggleTodo(id) {
       todos.forEach(function (todo) { if (todo.id === id) todo.done = !todo.done; });
+      save();
       render();
     }
 
     function removeTodo(id) {
       todos = todos.filter(function (todo) { return todo.id !== id; });
+      save();
       render();
     }
 
@@ -99,6 +141,7 @@
       event.preventDefault();
       if (addTodo(input.value)) input.value = "";
     });
+    load();
     render();
   </script>
 </body>
