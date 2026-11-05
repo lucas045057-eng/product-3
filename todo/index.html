@@ -18,7 +18,11 @@
     input[type="text"] { flex: 1 1 auto; min-width: 0; padding: 0.5rem 0.75rem; font: inherit; border: 1px solid #d0d7de; border-radius: 6px; }
     button { flex: none; padding: 0.5rem 1rem; font: inherit; border: 0; border-radius: 6px; background: #1f6feb; color: #fff; }
     ul { list-style: none; margin: 0; padding: 0; }
-    li { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+    li { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #d0d7de; }
+    li input[type="checkbox"] { flex: none; width: 1.25rem; height: 1.25rem; margin: 0; }
+    li span { flex: 1 1 auto; min-width: 0; }
+    li.done span { color: #59636e; text-decoration: line-through; }
+    li button { padding: 0.25rem 0.5rem; background: transparent; color: #cf222e; }
     #empty { text-align: center; padding: 2rem 0; }
   </style>
 </head>
@@ -36,13 +40,66 @@
     <p class="muted" id="empty">今天还没有待办</p>
   </main>
   <script>
-    // F1 只搭页面骨架：显示今天日期（本地时间），挡住表单提交，避免页面跳转。
     function pad(n) { return (n < 10 ? "0" : "") + n; }
     function todayLabel(now) {
       return now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
     }
+
+    var todos = [];
+    var nextId = 1;
+    var list = document.getElementById("list");
+    var empty = document.getElementById("empty");
+    var input = document.getElementById("new-text");
+
+    function addTodo(text) {
+      var trimmed = String(text == null ? "" : text).trim();
+      if (!trimmed) return false;
+      todos.push({ id: nextId++, text: trimmed, done: false });
+      render();
+      return true;
+    }
+
+    function toggleTodo(id) {
+      todos.forEach(function (todo) { if (todo.id === id) todo.done = !todo.done; });
+      render();
+    }
+
+    function removeTodo(id) {
+      todos = todos.filter(function (todo) { return todo.id !== id; });
+      render();
+    }
+
+    function render() {
+      list.textContent = "";
+      todos.forEach(function (todo) {
+        var item = document.createElement("li");
+        item.className = todo.done ? "done" : "";
+        var box = document.createElement("input");
+        box.type = "checkbox";
+        box.checked = todo.done;
+        box.setAttribute("aria-label", "完成：" + todo.text);
+        box.addEventListener("change", function () { toggleTodo(todo.id); });
+        var label = document.createElement("span");
+        label.textContent = todo.text;
+        var remove = document.createElement("button");
+        remove.type = "button";
+        remove.textContent = "删除";
+        remove.setAttribute("aria-label", "删除：" + todo.text);
+        remove.addEventListener("click", function () { removeTodo(todo.id); });
+        item.appendChild(box);
+        item.appendChild(label);
+        item.appendChild(remove);
+        list.appendChild(item);
+      });
+      empty.hidden = todos.length > 0;
+    }
+
     document.getElementById("today").textContent = todayLabel(new Date());
-    document.getElementById("add-form").addEventListener("submit", function (event) { event.preventDefault(); });
+    document.getElementById("add-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (addTodo(input.value)) input.value = "";
+    });
+    render();
   </script>
 </body>
 </html>
