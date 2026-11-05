@@ -40,8 +40,12 @@
       "id": "F4",
       "behavior": "顶部显示今天完成几条/共几条并实时一致",
       "verification": "node --test",
-      "state": "not_started",
-      "issue": 3
+      "state": "passing",
+      "issue": 3,
+      "verified": {
+        "at": "2026-11-05T12:29:48.077Z",
+        "digest": "7a7165d770ad39ce21f9e0009f86d22df076c7db3ab9b87db3bf5746e7d61c75"
+      }
     },
     {
       "id": "F5",

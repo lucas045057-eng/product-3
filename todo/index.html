@@ -14,6 +14,7 @@
     header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 1rem; }
     h1 { margin: 0; font-size: 1.5rem; }
     .muted { color: #59636e; font-size: 0.9em; }
+    #summary { flex-basis: 100%; margin: 0; }
     form { display: flex; gap: 0.5rem; margin: 1rem 0; }
     input[type="text"] { flex: 1 1 auto; min-width: 0; padding: 0.5rem 0.75rem; font: inherit; border: 1px solid #d0d7de; border-radius: 6px; }
     button { flex: none; padding: 0.5rem 1rem; font: inherit; border: 0; border-radius: 6px; background: #1f6feb; color: #fff; }
@@ -31,6 +32,7 @@
     <header>
       <h1>每日待办</h1>
       <span class="muted" id="today">—</span>
+      <p class="muted" id="summary" aria-live="polite">今天完成 0 条 / 共 0 条</p>
     </header>
     <form id="add-form" autocomplete="off">
       <input type="text" id="new-text" aria-label="新的待办" placeholder="今天要做什么？" maxlength="200">
@@ -59,6 +61,7 @@
     var empty = document.getElementById("empty");
     var input = document.getElementById("new-text");
     var storageStatus = document.getElementById("storage-status");
+    var summary = document.getElementById("summary");
 
     function getStorage() {
       try {
@@ -199,6 +202,8 @@
         list.appendChild(item);
       });
       empty.hidden = todos.length > 0;
+      var done = todos.filter(function (todo) { return todo.done; }).length;
+      summary.textContent = "今天完成 " + done + " 条 / 共 " + todos.length + " 条";
     }
 
     document.getElementById("today").textContent = todayLabel(new Date());
