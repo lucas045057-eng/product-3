@@ -7,8 +7,12 @@
       "id": "F1",
       "behavior": "todo 目录下可直接打开的单页，手机窄屏不溢出",
       "verification": "node --test",
-      "state": "not_started",
-      "issue": 3
+      "state": "passing",
+      "issue": 3,
+      "verified": {
+        "at": "2026-11-05T03:32:23.721Z",
+        "digest": "ecd7a1ef9615b71ca0a93f137469f248e64b51ce896a4d610df302a4000e05b8"
+      }
     },
     {
       "id": "F2",

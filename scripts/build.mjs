@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 构建：把 index.html 复制进 dist/，并生成 dist/version.json（含【完整】40 位 commit SHA）。
+// 构建：把 index.html（以及 todo/、assets/ 目录）复制进 dist/，并生成 dist/version.json（含【完整】40 位 commit SHA）。
 //
 // version.json 就是部署后的"健康接口"：ops/delivery.json 的 health 指向它，交付流水线靠它核对线上到底是哪个提交。
 //   {"ok":true,"name":"agent-template","repo":"owner/name","commit":"<40位>","dirty":false,"built_at":"<ISO 时间>"}
@@ -41,6 +41,7 @@ export function build(outDir = path.join(ROOT, "dist"), env = process.env) {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
   cpSync(path.join(ROOT, "index.html"), path.join(outDir, "index.html"));
+  if (existsSync(path.join(ROOT, "todo"))) cpSync(path.join(ROOT, "todo"), path.join(outDir, "todo"), { recursive: true });
   if (existsSync(path.join(ROOT, "assets"))) cpSync(path.join(ROOT, "assets"), path.join(outDir, "assets"), { recursive: true });
   writeFileSync(path.join(outDir, ".nojekyll"), ""); // 不让 Pages 用 Jekyll 处理
   const version = versionJson(env);
