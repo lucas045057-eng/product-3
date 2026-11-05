@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- 单文件、零外部资源：双击本地打开（file://）和部署后访问效果一样。 -->
+  <!-- 单文件、零外部资源；本地文件的持久化能力取决于浏览器。 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
   <title>每日待办</title>
   <style>
@@ -36,6 +36,7 @@
       <input type="text" id="new-text" aria-label="新的待办" placeholder="今天要做什么？" maxlength="200">
       <button type="submit" id="add-button">添加</button>
     </form>
+    <p class="muted" id="storage-status" role="status" hidden></p>
     <ul id="list"></ul>
     <p class="muted" id="empty">今天还没有待办</p>
   </main>
@@ -45,28 +46,134 @@
       return now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
     }
 
+    var LEGACY_KEY = "daily-todo.v1";
+    var PREFIX = "daily-todo.v2.";
     var todos = [];
-    var nextId = 1;
+    var records = new Map();
+    var pending = new Map();
+    var unavailable = false;
+    var legacyPresent = false;
+    var lastCreated = 0;
+    var sequence = 0;
     var list = document.getElementById("list");
     var empty = document.getElementById("empty");
     var input = document.getElementById("new-text");
+    var storageStatus = document.getElementById("storage-status");
+
+    function getStorage() {
+      try {
+        return typeof localStorage === "undefined" ? null : localStorage;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function parse(text) {
+      try { return JSON.parse(text); } catch (error) { return null; }
+    }
+
+    // Import immutable item payloads only. Mutable state and deletion use separate keys,
+    // so a second tab importing the same old data cannot reset a completed/deleted item.
+    function importLegacy(raw, next) {
+      var saved = parse(raw);
+      if (!saved || !Array.isArray(saved.todos)) return;
+      legacyPresent = true;
+      var occurrences = new Map();
+      saved.todos.forEach(function (todo, index) {
+        if (!todo || typeof todo.text !== "string" || !todo.text.trim()) return;
+        var identity = JSON.stringify([Number.isSafeInteger(todo.id) ? todo.id : null, todo.text.trim()]);
+        var occurrence = occurrences.get(identity) || 0;
+        occurrences.set(identity, occurrence + 1);
+        var id = "v1-" + encodeURIComponent(identity) + "-" + occurrence;
+        var key = PREFIX + "item." + id;
+        if (!next.has(key) && !pending.has(key) && !next.has(PREFIX + "del." + id)) {
+          pending.set(key, JSON.stringify({ text: todo.text.trim(), done: todo.done === true, created: index }));
+        }
+      });
+    }
+
+    function refresh() {
+      var storage = getStorage();
+      try {
+        if (!storage || typeof storage.key !== "function" || typeof storage.length !== "number") throw Error("storage unavailable");
+        var next = new Map();
+        for (var i = 0; i < storage.length; i++) {
+          var key = storage.key(i);
+          if (key && key.indexOf(PREFIX) === 0) {
+            var value = storage.getItem(key);
+            if (value !== null) next.set(key, value);
+          }
+        }
+        importLegacy(storage.getItem(LEGACY_KEY), next);
+        records = next;
+        unavailable = false;
+      } catch (error) {
+        unavailable = true; // Keep the last readable snapshot and pending operations.
+      }
+      pending.forEach(function (value, key) { records.set(key, value); });
+      todos = [];
+      records.forEach(function (value, key) {
+        if (key.indexOf(PREFIX + "item.") !== 0) return;
+        var id = key.slice((PREFIX + "item.").length);
+        if (records.has(PREFIX + "del." + id)) return;
+        var todo = parse(value);
+        if (!todo || typeof todo.text !== "string" || !todo.text.trim() || !Number.isFinite(todo.created)) return;
+        var state = records.get(PREFIX + "state." + id);
+        todos.push({ id: id, text: todo.text.trim(), done: state === "true" || (state !== "false" && todo.done === true), created: todo.created });
+        lastCreated = Math.max(lastCreated, todo.created);
+      });
+      todos.sort(function (a, b) { return a.created - b.created || a.id.localeCompare(b.id); });
+      storageStatus.textContent = unavailable ? "本地存储不可用，本页改动刷新后不会保留。" :
+        pending.size ? "有改动未能保存，请保留此页；下次操作会重试保存。" :
+        legacyPresent ? "已读取旧版待办；如果还开着旧版页面，请刷新那些页面后再操作。" : "";
+      storageStatus.hidden = !storageStatus.textContent;
+      render();
+    }
+
+    function flushPending() {
+      var storage = getStorage();
+      if (!storage || unavailable) return;
+      for (var entry of pending) {
+        try {
+          storage.setItem(entry[0], entry[1]);
+          pending.delete(entry[0]);
+        } catch (error) { break; }
+      }
+    }
+
+    function newId() {
+      if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+        var bytes = crypto.getRandomValues(new Uint8Array(16));
+        return Array.from(bytes, function (byte) { return byte.toString(16).padStart(2, "0"); }).join("");
+      }
+      return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2) + "-" + (++sequence);
+    }
+
+    function write(key, value) {
+      pending.set(key, value);
+      flushPending();
+      refresh();
+    }
 
     function addTodo(text) {
       var trimmed = String(text == null ? "" : text).trim();
       if (!trimmed) return false;
-      todos.push({ id: nextId++, text: trimmed, done: false });
-      render();
+      refresh();
+      lastCreated = Math.max(Date.now(), lastCreated + 1);
+      write(PREFIX + "item." + newId(), JSON.stringify({ text: trimmed, done: false, created: lastCreated }));
       return true;
     }
 
-    function toggleTodo(id) {
-      todos.forEach(function (todo) { if (todo.id === id) todo.done = !todo.done; });
-      render();
+    function setTodoDone(id, done) {
+      refresh();
+      var todo = todos.find(function (item) { return item.id === id; });
+      if (todo) write(PREFIX + "state." + id, String(done));
     }
 
     function removeTodo(id) {
-      todos = todos.filter(function (todo) { return todo.id !== id; });
-      render();
+      refresh();
+      // Never remove the marker: even an unseen, concurrent state write cannot undo it.
+      write(PREFIX + "del." + id, "1");
     }
 
     function render() {
@@ -78,7 +185,7 @@
         box.type = "checkbox";
         box.checked = todo.done;
         box.setAttribute("aria-label", "完成：" + todo.text);
-        box.addEventListener("change", function () { toggleTodo(todo.id); });
+        box.addEventListener("change", function () { setTodoDone(todo.id, box.checked); });
         var label = document.createElement("span");
         label.textContent = todo.text;
         var remove = document.createElement("button");
@@ -99,7 +206,20 @@
       event.preventDefault();
       if (addTodo(input.value)) input.value = "";
     });
-    render();
+    if (typeof addEventListener === "function") {
+      addEventListener("storage", function (event) {
+        if (event.key === null || event.key === LEGACY_KEY || (event.key && event.key.indexOf(PREFIX) === 0)) refresh();
+      });
+      addEventListener("focus", refresh);
+    }
+    if (typeof document.addEventListener === "function") {
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") refresh();
+      });
+    }
+    refresh();
+    flushPending();
+    refresh();
   </script>
 </body>
 </html>

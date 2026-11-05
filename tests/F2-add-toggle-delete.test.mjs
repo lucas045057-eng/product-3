@@ -40,6 +40,8 @@ class FakeElement {
     (this.listeners[type] ??= []).push(fn);
   }
   dispatch(type, event = {}) {
+    // This helper models a user action: checkbox activation precedes the change event.
+    if (type === "change" && this.type === "checkbox") this.checked = !this.checked;
     for (const fn of this.listeners[type] ?? []) fn({ target: this, preventDefault() {}, ...event });
   }
 }
