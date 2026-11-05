@@ -41,6 +41,8 @@ class FakeElement {
     (this.listeners[type] ??= []).push(fn);
   }
   dispatch(type, event = {}) {
+    // A real user toggles the DOM control before its change listener runs.
+    if (type === "change" && this.type === "checkbox") this.checked = !this.checked;
     for (const fn of this.listeners[type] ?? []) fn({ target: this, preventDefault() {}, ...event });
   }
 }
@@ -267,6 +269,20 @@ test("同一条相反状态以后写为准，不触碰其他条目", () => {
   b.checkbox(0).dispatch("change");
   backend.flush();
   assert.deepEqual(backend.open().checked(), [false, false]);
+});
+
+test("两页选择相同状态：存储先更新但UI未同步时，保存用户选择而非再取反", () => {
+  for (const initiallyDone of [false, true]) {
+    const storage = new FakeStorage();
+    const a = openPage({ localStorage: storage });
+    a.submit("共同待办");
+    if (initiallyDone) a.checkbox(0).dispatch("change");
+    const b = openPage({ localStorage: storage });
+    a.checkbox(0).dispatch("change");
+    assert.equal(b.checkbox(0).checked, initiallyDone, "B还没收到同步通知");
+    b.checkbox(0).dispatch("change");
+    assert.deepEqual(openPage({ localStorage: storage }).checked(), [!initiallyDone]);
+  }
 });
 
 test("刷新后再操作：新加的条目不会和恢复的条目撞号", () => {

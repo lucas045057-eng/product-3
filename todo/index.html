@@ -164,10 +164,10 @@
       return true;
     }
 
-    function toggleTodo(id) {
+    function setTodoDone(id, done) {
       refresh();
       var todo = todos.find(function (item) { return item.id === id; });
-      if (todo) write(PREFIX + "state." + id, String(!todo.done));
+      if (todo) write(PREFIX + "state." + id, String(done));
     }
 
     function removeTodo(id) {
@@ -185,7 +185,7 @@
         box.type = "checkbox";
         box.checked = todo.done;
         box.setAttribute("aria-label", "完成：" + todo.text);
-        box.addEventListener("change", function () { toggleTodo(todo.id); });
+        box.addEventListener("change", function () { setTodoDone(todo.id, box.checked); });
         var label = document.createElement("span");
         label.textContent = todo.text;
         var remove = document.createElement("button");
